@@ -18,6 +18,10 @@ extends Node2D
 # Node that holds the next clump
 @onready var next_clump_position = $"Next Clump"
 
+# States the game board can be in
+enum states {CLUMP_FALLING, BLOCKS_FALLING}
+# Current state
+var state : int = states.CLUMP_FALLING
 # Stores the dropped blocks, from left to right, top to bottom in that order
 var board : Array
 # Stores the four dropping blocks
@@ -26,6 +30,10 @@ var clump : Array
 var next_clump : Array
 # Stores the position of the clump
 var clump_position : Vector2
+# Stores the falling blocks
+var falling_blocks : Array[Block]
+# Stores the blocks to erase from falling blocks array
+var blocks_to_erase : Array[Block]
 # Fall speed for clump
 var fall_speed : float = initial_fall_speed
 
@@ -35,24 +43,33 @@ func _ready() -> void:
 	initialize_clump()
 
 func _process(delta: float) -> void:
-	# Process rotation input
-	if Input.is_action_just_pressed("rotate_ccw"):
-		rotate_CCW()
-	if Input.is_action_just_pressed("rotate_cw"):
-		rotate_CW()
-	# Process movement input
-	var movement = Vector2.DOWN
-	if Input.is_action_just_pressed("ui_left"):
-		movement += Vector2.LEFT
-	if Input.is_action_just_pressed("ui_right"):
-		movement += Vector2.RIGHT
-	move_clump(movement, delta)
+	# Process inputs if the current state is CLUMP_FALLING
+	if state == states.CLUMP_FALLING:
+		# Process rotation input
+		if Input.is_action_just_pressed("rotate_ccw"):
+			rotate_CCW()
+		if Input.is_action_just_pressed("rotate_cw"):
+			rotate_CW()
+		# Process movement input
+		var movement = Vector2.DOWN
+		if Input.is_action_just_pressed("ui_left"):
+			movement += Vector2.LEFT
+		if Input.is_action_just_pressed("ui_right"):
+			movement += Vector2.RIGHT
+		move_clump(movement, delta)
+	# Make blocks fall if current state is BLOCKS_FALLING
+	if state == states.BLOCKS_FALLING:
+		if falling_blocks:
+			drop_blocks(delta)
+		else:
+			state = states.CLUMP_FALLING
 
 func _draw() -> void:
 	draw_board()
 	draw_border()
 	draw_clump()
 	draw_next_clump()
+	draw_falling_blocks()
 
 # Initializes the board to be empty, and of the proper length
 func initialize_board() -> void:
@@ -105,6 +122,13 @@ func draw_next_clump() -> void:
 	draw_texture(next_clump[1].texture, next_clump_position.position + Vector2(block_size.x, 0))
 	draw_texture(next_clump[2].texture, next_clump_position.position + Vector2(block_size.x, block_size.y))
 	draw_texture(next_clump[3].texture, next_clump_position.position + Vector2(0, block_size.y))
+
+# Draw any falling blocks
+func draw_falling_blocks() -> void:
+	if falling_blocks:
+		for block in falling_blocks:
+			draw_texture(block.texture, Vector2(block.pos.x * block_size.x, block.pos.y * block_size.y))
+		queue_redraw()
 
 # Returns whether a block is present in the passed board position or not
 func get_if_board(board_position : Vector2i) -> bool:
@@ -161,13 +185,42 @@ func move_clump(direction : Vector2i, delta : float) -> void:
 	clump_position = test_position
 	queue_redraw()
 
+# Set up blocks to fall
+func mark_blocks_to_drop() -> void:
+	for x in range(board_size.x - 1, -1, -1):
+		for y in range(board_size.y - 1, -1, -1):
+			if not get_if_board(Vector2i(x, y)):
+				for y2 in range(y - 1, -1, -1):
+					if get_if_board(Vector2i(x, y2)):
+						var block = get_board(Vector2i(x, y2))
+						board[x + (y2 * board_size.x)] = null
+						block.pos = Vector2(x, y2)
+						falling_blocks.append(block)
+
+# Drop down single blocks
+func drop_blocks(delta : float) -> void:
+	for block in falling_blocks:
+		var test_position = block.pos
+		test_position.y = block.pos.y + (fall_speed * fall_speed_multiplier * delta)
+		if get_if_board(Vector2i(floori(test_position.x), ceili(test_position.y))):
+			test_position.y = ceili(block.pos.y)
+			set_board(Vector2i(block.pos.x, ceili(block.pos.y)), block)
+			blocks_to_erase.append(block)
+		# Finish movement
+		block.pos = test_position
+	for block in blocks_to_erase:
+		falling_blocks.erase(block)
+	queue_redraw()
+
 # Transfer the blocks from the clump to the board
 func transfer_clump_blocks() -> void:
+	state = states.BLOCKS_FALLING
 	set_board(clump_position, clump[0])
 	set_board(clump_position + Vector2(1,0), clump[1])
 	set_board(clump_position + Vector2(1,1), clump[2])
 	set_board(clump_position + Vector2(0,1), clump[3])
 	reset_clump()
+	mark_blocks_to_drop()
 
 # Rotate clump clockwise
 func rotate_CW() -> void:
@@ -187,19 +240,6 @@ func rotate_blocks(starting_value: int) -> void:
 	for block in range(4):
 		clump.append(blocks[counter % 4])
 		counter += 1
-
-# Check for hanging blocks and drop them
-#func check_for_hanging_blocks():
-#	for x in range(board_size.x):
-#		for y in range(board_size.y - 1, -1, -1):
-#			if not get_if_board(Vector2i(x, y)):
-#				var bottom_empty = Vector2i(x, y)
-#				for y2 in range(y - 1, -1, -1):
-#					if get_if_board(x, y2):
-#						var tween = create_tween()
-#						tween.tween_property()
-				
-
 
 # Increase the fall speed of the clump
 func increase_fall_speed() -> void:

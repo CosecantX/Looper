@@ -2,12 +2,12 @@
 
 [ext_resource type="Script" path="res://Scenes/Board/board.gd" id="1_bra8i"]
 [ext_resource type="PackedScene" uid="uid://cnbbl4cfwc5c7" path="res://Scenes/Blocks/red_block.tscn" id="2_ov624"]
-[ext_resource type="PackedScene" uid="uid://c21jexrdhn2u4" path="res://Scenes/Blocks/green_block.tscn" id="3_75npu"]
 [ext_resource type="PackedScene" uid="uid://imbgy13xlrrs" path="res://Scenes/Blocks/blue_block.tscn" id="4_6040b"]
+[ext_resource type="PackedScene" uid="uid://hjpcd3voi1ft" path="res://Scenes/Blocks/yellow_block.tscn" id="4_kdrfb"]
 
 [node name="Board" type="Node2D"]
 script = ExtResource("1_bra8i")
-block_scenes = Array[PackedScene]([ExtResource("2_ov624"), ExtResource("3_75npu"), ExtResource("4_6040b")])
+block_scenes = Array[PackedScene]([ExtResource("2_ov624"), ExtResource("4_6040b"), ExtResource("4_kdrfb")])
 
 [node name="Grace Timer" type="Timer" parent="."]
 one_shot = true
