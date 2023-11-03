@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://b2ldquegp4vlb"]
+
+[ext_resource type="Script" path="res://Scenes/Blocks/block.gd" id="1_daplh"]
+
+[node name="Block" type="Sprite2D"]
+centered = false
+script = ExtResource("1_daplh")

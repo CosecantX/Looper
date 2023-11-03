@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3 uid="uid://cnbbl4cfwc5c7"]
+
+[ext_resource type="PackedScene" uid="uid://b2ldquegp4vlb" path="res://Scenes/Blocks/block.tscn" id="1_6qecu"]
+[ext_resource type="Texture2D" uid="uid://5t2mlumsm0hl" path="res://Assets/element_red_square.png" id="2_7oil5"]
+
+[node name="Red Block" instance=ExtResource("1_6qecu")]
+texture = ExtResource("2_7oil5")

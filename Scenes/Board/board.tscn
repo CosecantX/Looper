@@ -1,0 +1,18 @@
+[gd_scene load_steps=5 format=3 uid="uid://c72i87mfbaemr"]
+
+[ext_resource type="Script" path="res://Scenes/Board/board.gd" id="1_bra8i"]
+[ext_resource type="PackedScene" uid="uid://cnbbl4cfwc5c7" path="res://Scenes/Blocks/red_block.tscn" id="2_ov624"]
+[ext_resource type="PackedScene" uid="uid://c21jexrdhn2u4" path="res://Scenes/Blocks/green_block.tscn" id="3_75npu"]
+[ext_resource type="PackedScene" uid="uid://imbgy13xlrrs" path="res://Scenes/Blocks/blue_block.tscn" id="4_6040b"]
+
+[node name="Board" type="Node2D"]
+script = ExtResource("1_bra8i")
+block_scenes = Array[PackedScene]([ExtResource("2_ov624"), ExtResource("3_75npu"), ExtResource("4_6040b")])
+
+[node name="Grace Timer" type="Timer" parent="."]
+one_shot = true
+
+[node name="Next Clump" type="Node2D" parent="."]
+position = Vector2(258, -66)
+
+[connection signal="timeout" from="Grace Timer" to="." method="_on_grace_timer_timeout"]

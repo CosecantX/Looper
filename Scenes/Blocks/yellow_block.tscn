@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://hjpcd3voi1ft"]
+
+[ext_resource type="PackedScene" uid="uid://b2ldquegp4vlb" path="res://Scenes/Blocks/block.tscn" id="1_nt1pw"]
+[ext_resource type="Texture2D" uid="uid://3dew8sd3hogl" path="res://Assets/element_yellow_square.png" id="2_e5d54"]
+
+[node name="Yellow Block" instance=ExtResource("1_nt1pw")]
+texture = ExtResource("2_e5d54")
+color = 3
