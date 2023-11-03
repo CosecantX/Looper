@@ -15,19 +15,19 @@ extends Node2D
 
 # Timer that determines the amoount of time you can move the clump while it's on the floor
 @onready var grace_timer = $"Grace Timer"
-# Node that holds the next clump
+# Node that holds the next clump display's position
 @onready var next_clump_position = $"Next Clump"
 
 # States the game board can be in
-enum states {CLUMP_FALLING, BLOCKS_FALLING}
+enum states {CLUMP_FALLING, BLOCKS_FALLING, CHECKING_FOR_LOOPS}
 # Current state
 var state : int = states.CLUMP_FALLING
 # Stores the dropped blocks, from left to right, top to bottom in that order
-var board : Array
+var board : Array[Block]
 # Stores the four dropping blocks
-var clump : Array
+var clump : Array[Block]
 # Stores the next clump
-var next_clump : Array
+var next_clump : Array[Block]
 # Stores the position of the clump
 var clump_position : Vector2
 # Stores the falling blocks
