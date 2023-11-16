@@ -5,3 +5,4 @@
 
 [node name="Red Block" instance=ExtResource("1_6qecu")]
 texture = ExtResource("2_7oil5")
+line_color = Color(1, 0.458824, 0.423529, 1)

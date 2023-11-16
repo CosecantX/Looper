@@ -12,6 +12,8 @@ extends Node2D
 @export var fall_acceleration : float = 1
 # How much to increase the fall speed by when holding down
 @export var fall_speed_multiplier : float = 2
+# Width of line to draw between blocks
+@export var line_width : float = 5.0
 
 # Timer that determines the amoount of time you can move the clump while it's on the floor
 @onready var grace_timer = $"Grace Timer"
@@ -70,6 +72,7 @@ func _draw() -> void:
 	draw_clump()
 	draw_next_clump()
 	draw_falling_blocks()
+	draw_connection_lines()
 
 # Initializes the board to be empty, and of the proper length
 func initialize_board() -> void:
@@ -102,7 +105,7 @@ func reset_clump() -> void:
 func draw_board() -> void:
 	for x in board_size.x:
 		for y in board_size.y:
-			if get_if_board(Vector2i(x,y)):
+			if get_if_board_with_borders(Vector2i(x,y)):
 				draw_texture(get_board(Vector2i(x,y)).texture, Vector2i(x * block_size.x, y * block_size.y))
 
 # Draw border
@@ -130,10 +133,41 @@ func draw_falling_blocks() -> void:
 			draw_texture(block.texture, Vector2(block.pos.x * block_size.x, block.pos.y * block_size.y))
 		queue_redraw()
 
+# Draw lines that connect blocks
+func draw_connection_lines() -> void:
+	for x in board_size.x:
+		for y in board_size.y:
+			if get_if_board_with_borders(Vector2i(x, y)):
+				var line_color = get_board(Vector2i(x, y)).line_color
+				# Check and draw lines for matching block to the right
+				if get_if_block_without_borders(Vector2i(x + 1, y)):
+					var right_block = get_board(Vector2i(x + 1, y))
+					if line_color == right_block.line_color:
+						var starting_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
+						var ending_block_midpoint = Vector2(((x + 1) * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
+						draw_line(starting_block_midpoint, ending_block_midpoint,line_color, line_width)
+				# Check and draw lines for matching block below
+				if get_if_block_without_borders(Vector2i(x, y + 1)):
+					var below_block = get_board(Vector2i(x, y + 1))
+					if line_color == below_block.line_color:
+						var starting_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
+						var ending_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), ((y + 1) * block_size.y) + (block_size.y / 2))
+						draw_line(starting_block_midpoint, ending_block_midpoint,line_color, line_width)
+				
+
 # Returns whether a block is present in the passed board position or not
-func get_if_board(board_position : Vector2i) -> bool:
+func get_if_board_with_borders(board_position : Vector2i) -> bool:
 	if board_position.x < 0 or board_position.x >= board_size.x or board_position.y >= board_size.y:
 		return true
+	elif get_board(board_position):
+		return true
+	else:
+		return false
+
+# Returns whether a block exists on board without concern for block borders
+func get_if_block_without_borders(board_position : Vector2i) -> bool:
+	if board_position.x < 0 or board_position.x >= board_size.x or board_position.y >= board_size.y:
+		return false
 	elif get_board(board_position):
 		return true
 	else:
@@ -158,12 +192,12 @@ func move_clump(direction : Vector2i, delta : float) -> void:
 	# Test for left movement
 	if direction.x < 0:
 		test_position.x -= 1
-		if get_if_board(Vector2i(floori(test_position.x), ceili(test_position.y) + 1)):
+		if get_if_board_with_borders(Vector2i(floori(test_position.x), ceili(test_position.y) + 1)):
 			test_position = clump_position
 	# Test for right movement
 	if direction.x > 0:
 		test_position.x += 1
-		if get_if_board(Vector2i(floori(test_position.x + 1), ceili(test_position.y) + 1)):
+		if get_if_board_with_borders(Vector2i(floori(test_position.x + 1), ceili(test_position.y) + 1)):
 			test_position = clump_position
 	# Check vertical movement
 	if Input.is_action_pressed("ui_down"):
@@ -171,10 +205,10 @@ func move_clump(direction : Vector2i, delta : float) -> void:
 	else:
 		test_position.y = clump_position.y + (direction.y * fall_speed * delta)
 	# Check left block
-	if get_if_board(Vector2i(floori(test_position.x), ceili(test_position.y + 1))):
+	if get_if_board_with_borders(Vector2i(floori(test_position.x), ceili(test_position.y + 1))):
 		test_position.y = ceili(clump_position.y)
 	# Check right block
-	if get_if_board(Vector2i(floori(test_position.x + 1), ceili(test_position.y + 1))):
+	if get_if_board_with_borders(Vector2i(floori(test_position.x + 1), ceili(test_position.y + 1))):
 		test_position.y = ceili(clump_position.y)
 	# Check if there's no vertical movement
 	if (test_position.y == clump_position.y) and grace_timer.is_stopped():
@@ -189,9 +223,9 @@ func move_clump(direction : Vector2i, delta : float) -> void:
 func mark_blocks_to_drop() -> void:
 	for x in range(board_size.x - 1, -1, -1):
 		for y in range(board_size.y - 1, -1, -1):
-			if not get_if_board(Vector2i(x, y)):
+			if not get_if_board_with_borders(Vector2i(x, y)):
 				for y2 in range(y - 1, -1, -1):
-					if get_if_board(Vector2i(x, y2)):
+					if get_if_board_with_borders(Vector2i(x, y2)):
 						var block = get_board(Vector2i(x, y2))
 						board[x + (y2 * board_size.x)] = null
 						block.pos = Vector2(x, y2)
@@ -202,7 +236,7 @@ func drop_blocks(delta : float) -> void:
 	for block in falling_blocks:
 		var test_position = block.pos
 		test_position.y = block.pos.y + (fall_speed * fall_speed_multiplier * delta)
-		if get_if_board(Vector2i(floori(test_position.x), ceili(test_position.y))):
+		if get_if_board_with_borders(Vector2i(floori(test_position.x), ceili(test_position.y))):
 			test_position.y = ceili(block.pos.y)
 			set_board(Vector2i(block.pos.x, ceili(block.pos.y)), block)
 			blocks_to_erase.append(block)
