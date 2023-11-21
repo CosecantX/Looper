@@ -6,8 +6,3 @@
 
 [node name="Board" parent="." instance=ExtResource("1_82qgw")]
 position = Vector2(32, 96)
-board_size = Vector2(8, 12)
-block_size = Vector2(32, 32)
-initial_fall_speed = 5.0
-fall_acceleration = 1.0
-fall_speed_multiplier = 2.0
