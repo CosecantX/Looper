@@ -140,14 +140,14 @@ func draw_connection_lines() -> void:
 			if get_if_board_with_borders(Vector2i(x, y)):
 				var line_color = get_board(Vector2i(x, y)).line_color
 				# Check and draw lines for matching block to the right
-				if get_if_block_without_borders(Vector2i(x + 1, y)):
+				if get_if_board_without_borders(Vector2i(x + 1, y)):
 					var right_block = get_board(Vector2i(x + 1, y))
 					if line_color == right_block.line_color:
 						var starting_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
 						var ending_block_midpoint = Vector2(((x + 1) * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
 						draw_line(starting_block_midpoint, ending_block_midpoint,line_color, line_width)
 				# Check and draw lines for matching block below
-				if get_if_block_without_borders(Vector2i(x, y + 1)):
+				if get_if_board_without_borders(Vector2i(x, y + 1)):
 					var below_block = get_board(Vector2i(x, y + 1))
 					if line_color == below_block.line_color:
 						var starting_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
@@ -165,7 +165,7 @@ func get_if_board_with_borders(board_position : Vector2i) -> bool:
 		return false
 
 # Returns whether a block exists on board without concern for block borders
-func get_if_block_without_borders(board_position : Vector2i) -> bool:
+func get_if_board_without_borders(board_position : Vector2i) -> bool:
 	if board_position.x < 0 or board_position.x >= board_size.x or board_position.y >= board_size.y:
 		return false
 	elif get_board(board_position):
