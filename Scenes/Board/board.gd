@@ -3,7 +3,7 @@ extends Node2D
 # Collection of packed scenes for each block type
 @export var block_scenes : Array[PackedScene]
 # Size of the board, in blocks
-@export var board_size := Vector2(8, 12)
+@export var board_size := Vector2(14, 18)
 # Size of the blocks, in pixels
 @export var block_size := Vector2(32, 32)
 # Initial fall speed for clump
@@ -36,6 +36,10 @@ var clump_position : Vector2
 var falling_blocks : Array[Block]
 # Stores the blocks to erase from falling blocks array
 var blocks_to_erase : Array[Block]
+# Stores whether a loop has been found
+var loop_found : bool = false
+# Blocks to "pop" or remove from board
+var blocks_to_pop : Array[Block]
 # Fall speed for clump
 var fall_speed : float = initial_fall_speed
 
@@ -61,8 +65,17 @@ func _process(delta: float) -> void:
 		move_clump(movement, delta)
 	# Make blocks fall if current state is BLOCKS_FALLING
 	if state == states.BLOCKS_FALLING:
+		mark_blocks_to_drop()
 		if falling_blocks:
 			drop_blocks(delta)
+		else:
+			state = states.CHECKING_FOR_LOOPS
+	# Check for loops
+	if state == states.CHECKING_FOR_LOOPS:
+		check_for_loops()
+		if blocks_to_pop:
+			pop_blocks()
+			state = states.BLOCKS_FALLING
 		else:
 			state = states.CLUMP_FALLING
 
@@ -140,20 +153,68 @@ func draw_connection_lines() -> void:
 			if get_if_board_with_borders(Vector2i(x, y)):
 				var line_color = get_board(Vector2i(x, y)).line_color
 				# Check and draw lines for matching block to the right
-				if get_if_block_without_borders(Vector2i(x + 1, y)):
+				if get_if_board_without_borders(Vector2i(x + 1, y)):
 					var right_block = get_board(Vector2i(x + 1, y))
 					if line_color == right_block.line_color:
 						var starting_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
 						var ending_block_midpoint = Vector2(((x + 1) * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
 						draw_line(starting_block_midpoint, ending_block_midpoint,line_color, line_width)
 				# Check and draw lines for matching block below
-				if get_if_block_without_borders(Vector2i(x, y + 1)):
+				if get_if_board_without_borders(Vector2i(x, y + 1)):
 					var below_block = get_board(Vector2i(x, y + 1))
 					if line_color == below_block.line_color:
 						var starting_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
 						var ending_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), ((y + 1) * block_size.y) + (block_size.y / 2))
 						draw_line(starting_block_midpoint, ending_block_midpoint,line_color, line_width)
-				
+
+func check_for_loops() -> void:
+	for x in board_size.x:
+		for y in board_size.y:
+			if get_if_board_without_borders(Vector2i(x, y)):
+				if not get_board(Vector2i(x, y)).visited:
+					var path : Array[Block] = []
+					search(get_board(Vector2i(x, y)), get_board(Vector2i(x, y)), path)
+					if loop_found:
+						handle_loop(path)
+					loop_found = false
+	reset_visited()
+
+func search(current_block : Block, previous_block : Block, path : Array) -> void:
+	path.append(current_block)
+	current_block.visited = true
+	var current_position = Vector2i(current_block.pos)
+	var current_color = previous_block.color
+	var neighbors : Array[Vector2i] = [
+		current_position + Vector2i.UP,
+		current_position + Vector2i.RIGHT,
+		current_position + Vector2i.DOWN,
+		current_position + Vector2i.LEFT
+	]
+	for neighbor in neighbors:
+		if get_if_board_without_borders(neighbor):
+			var block : Block = get_board(neighbor)
+			if block != previous_block and block.color == current_color:
+				if block.visited:
+					loop_found = true
+				else:
+					search(block, current_block, path)
+
+func handle_loop(path : Array[Block]) -> void:
+	print("loop found: ")
+	print(path)
+	blocks_to_pop.append_array(path)
+
+func pop_blocks() -> void:
+	for block in blocks_to_pop:
+		remove_from_board(block.pos)
+	blocks_to_pop = []
+	queue_redraw()
+
+# Reset board's visited tags
+func reset_visited() -> void:
+	for block in board:
+		if block:
+			block.visited = false
 
 # Returns whether a block is present in the passed board position or not
 func get_if_board_with_borders(board_position : Vector2i) -> bool:
@@ -165,7 +226,7 @@ func get_if_board_with_borders(board_position : Vector2i) -> bool:
 		return false
 
 # Returns whether a block exists on board without concern for block borders
-func get_if_block_without_borders(board_position : Vector2i) -> bool:
+func get_if_board_without_borders(board_position : Vector2i) -> bool:
 	if board_position.x < 0 or board_position.x >= board_size.x or board_position.y >= board_size.y:
 		return false
 	elif get_board(board_position):
@@ -181,9 +242,16 @@ func get_board(board_position : Vector2i) -> Block:
 func set_board(board_position : Vector2i, block : Block) -> bool:
 	if not get_board(board_position):
 		board[board_position.x + board_position.y * board_size.x] = block
+		block.pos = board_position
 		return true
 	else:
 		return false
+
+func remove_from_board(board_position : Vector2i) -> void:
+	if get_board(board_position):
+		var block = board[board_position.x + board_position.y * board_size.x]
+		board[board_position.x + board_position.y * board_size.x] = null
+		block.queue_free()
 
 # Moves the clump based on the direction passed in
 func move_clump(direction : Vector2i, delta : float) -> void:

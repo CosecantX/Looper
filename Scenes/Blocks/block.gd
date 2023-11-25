@@ -8,3 +8,5 @@ enum COLORS {RED, GREEN, BLUE, YELLOW}
 @export var color : COLORS
 
 var pos : Vector2
+
+var visited: bool = false
