@@ -176,6 +176,7 @@ func fill_clump() -> Array[Block]:
 			block_array.append(block_scenes[random_block].instantiate())
 	# Case if grey block spawned
 	else:
+		# Spawn one grey block in a random position
 		var spawn_num = randi_range(0, 3)
 		for i in range(4):
 			if i == spawn_num:

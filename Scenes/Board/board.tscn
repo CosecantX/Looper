@@ -9,13 +9,6 @@
 script = ExtResource("1_bra8i")
 block_scenes = Array[PackedScene]([ExtResource("2_ov624"), ExtResource("4_6040b")])
 grey_block_scene = ExtResource("4_el56e")
-board_size = null
-block_size = null
-initial_fall_speed = null
-fall_acceleration = null
-fall_speed_multiplier = null
-line_width = null
-grey_block_spawn_chance = null
 
 [node name="Grace Timer" type="Timer" parent="."]
 one_shot = true
