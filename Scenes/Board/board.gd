@@ -5,9 +5,9 @@ extends Node2D
 # Grey block that won't connect or pop
 @export var grey_block_scene : PackedScene
 # Size of the board, in blocks
-@export var board_size := Vector2(14, 18)
+@export var board_size := Vector2i(14, 18)
 # Size of the blocks, in pixels
-@export var block_size := Vector2(32, 32)
+@export var block_size := Vector2i(32, 32)
 # Initial fall speed for clump
 @export var initial_fall_speed : float = 5
 # How much to increase fall speed by
@@ -18,11 +18,11 @@ extends Node2D
 @export var line_width : float = 5.0
 # Chance of spawning a grey block
 @export var grey_block_spawn_chance : float = 0.5
+# Node that holds the next clump display's position
+@export var next_clump_position : Node2D
 
 # Timer that determines the amoount of time you can move the clump while it's on the floor
 @onready var grace_timer = $"Grace Timer"
-# Node that holds the next clump display's position
-@onready var next_clump_position = $"Next Clump"
 
 # Colors the blocks can be 
 const COLORS = preload("res://Scenes/colors_enum.gd").colors
@@ -121,7 +121,7 @@ func draw_board() -> void:
 
 # Draw border
 func draw_border() -> void:
-	draw_rect(Rect2(Vector2(-1,-1), (board_size * block_size) + Vector2(2,2)), Color.WHITE, false)
+	draw_rect(Rect2(Vector2i(-1,-1), (board_size * block_size) + Vector2i(2,2)), Color.WHITE, false)
 
 # Draw clump
 func draw_clump() -> void:
@@ -166,6 +166,7 @@ func draw_connection_lines() -> void:
 							var ending_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), ((y + 1) * block_size.y) + (block_size.y / 2))
 							draw_line(starting_block_midpoint, ending_block_midpoint,line_color, line_width)
 
+# Return a filled array of 4 blocks for use as a clump
 func fill_clump() -> Array[Block]:
 	var block_array : Array[Block]
 	var random : float = randf()
@@ -186,6 +187,7 @@ func fill_clump() -> Array[Block]:
 				block_array.append(block_scenes[random_block].instantiate())
 	return block_array
 
+# Check for loops of blocks in the board
 func check_for_loops() -> void:
 	for x in board_size.x:
 		for y in board_size.y:
@@ -199,6 +201,7 @@ func check_for_loops() -> void:
 						loop_found = false
 	reset_visited()
 
+# Do a depth first search recursively to find loops
 func search(current_block : Block, previous_block : Block, path : Array) -> void:
 	path.append(current_block)
 	current_block.visited = true
@@ -219,11 +222,13 @@ func search(current_block : Block, previous_block : Block, path : Array) -> void
 				else:
 					search(block, current_block, path)
 
+# What to do when a loop is found
 func handle_loop(path : Array[Block]) -> void:
 	print("loop found: ")
 	print(path)
 	blocks_to_pop.append_array(path)
 
+# Pop blocks on board, handle score, etc
 func pop_blocks() -> void:
 	for block in blocks_to_pop:
 		remove_from_board(block.pos)
@@ -267,9 +272,11 @@ func set_board(board_position : Vector2i, block : Block) -> bool:
 	else:
 		return false
 
+# Remove block from board given grid position
 func remove_from_board(board_position : Vector2i) -> void:
 	if get_board(board_position):
 		var block = board[board_position.x + board_position.y * board_size.x]
+		print(block.color)
 		board[board_position.x + board_position.y * board_size.x] = null
 		block.queue_free()
 

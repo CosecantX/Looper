@@ -13,7 +13,4 @@ grey_block_scene = ExtResource("4_el56e")
 [node name="Grace Timer" type="Timer" parent="."]
 one_shot = true
 
-[node name="Next Clump" type="Node2D" parent="."]
-position = Vector2(258, -66)
-
 [connection signal="timeout" from="Grace Timer" to="." method="_on_grace_timer_timeout"]
