@@ -46,6 +46,8 @@ var blocks_to_erase : Array[Block]
 var loop_found : bool = false
 # Blocks to "pop" or remove from board
 var blocks_to_pop : Array[Block]
+# Grey blocks at bottom of screen to remove
+var bottom_grey_blocks : Array[Block]
 # Fall speed for clump
 var fall_speed : float = initial_fall_speed
 
@@ -71,6 +73,9 @@ func _process(delta: float) -> void:
 		move_clump(movement, delta)
 	# Make blocks fall if current state is BLOCKS_FALLING
 	if state == states.BLOCKS_FALLING:
+		mark_bottom_greys()
+		if bottom_grey_blocks:
+			remove_bottom_greys()
 		mark_blocks_to_drop()
 		if falling_blocks:
 			drop_blocks(delta)
@@ -233,6 +238,23 @@ func pop_blocks() -> void:
 	for block in blocks_to_pop:
 		remove_from_board(block.pos)
 	blocks_to_pop = []
+	queue_redraw()
+
+# Mark grey blocks at bottom of board for removal
+func mark_bottom_greys() -> void:
+	for x in board_size.x:
+		for y in range(board_size.y - 1, 1, -1):
+			if get_if_board_without_borders(Vector2i(x, y)):
+				if get_board(Vector2i(x, y)).color == COLORS.GREY:
+					bottom_grey_blocks.append(get_board(Vector2i(x, y)))
+				else:
+					break
+
+# Remove grey blocks at bottom of board
+func remove_bottom_greys() -> void:
+	for block in bottom_grey_blocks:
+		remove_from_board(block.pos)
+	bottom_grey_blocks = []
 	queue_redraw()
 
 # Reset board's visited tags
