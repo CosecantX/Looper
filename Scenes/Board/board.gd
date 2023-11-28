@@ -168,7 +168,7 @@ func draw_connection_lines() -> void:
 
 # Return a filled array of 4 blocks for use as a clump
 func fill_clump() -> Array[Block]:
-	var block_array : Array[Block]
+	var block_array : Array[Block] = []
 	var random : float = randf()
 	# Case if no grey block spawned
 	if random > grey_block_spawn_chance:
@@ -339,6 +339,7 @@ func drop_blocks(delta : float) -> void:
 		block.pos = test_position
 	for block in blocks_to_erase:
 		falling_blocks.erase(block)
+	blocks_to_erase.clear()
 	queue_redraw()
 
 # Transfer the blocks from the clump to the board

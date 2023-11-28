@@ -10,4 +10,4 @@ board_size = Vector2i(14, 16)
 next_clump_position = NodePath("../Next Clump")
 
 [node name="Next Clump" type="Node2D" parent="."]
-position = Vector2(449, -64.78)
+position = Vector2(449, -64)
