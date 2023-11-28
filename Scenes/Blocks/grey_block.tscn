@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://dkbt17kwoljot"]
+
+[ext_resource type="PackedScene" uid="uid://b2ldquegp4vlb" path="res://Scenes/Blocks/block.tscn" id="1_blobn"]
+[ext_resource type="Texture2D" uid="uid://cwnjorbb0xkox" path="res://Assets/element_grey_square.png" id="2_j6vw4"]
+
+[node name="Block" instance=ExtResource("1_blobn")]
+texture = ExtResource("2_j6vw4")
+line_color = Color(1, 1, 1, 1)
+color = 4

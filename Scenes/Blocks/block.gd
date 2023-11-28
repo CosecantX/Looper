@@ -1,7 +1,7 @@
 extends Node2D
 class_name Block
 
-enum COLORS {RED, GREEN, BLUE, YELLOW}
+const COLORS = preload("res://Scenes/colors_enum.gd").colors
 
 @export var line_color : Color
 

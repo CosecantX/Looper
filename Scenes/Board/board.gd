@@ -2,6 +2,8 @@ extends Node2D
 
 # Collection of packed scenes for each block type
 @export var block_scenes : Array[PackedScene]
+# Grey block that won't connect or pop
+@export var grey_block_scene : PackedScene
 # Size of the board, in blocks
 @export var board_size := Vector2(14, 18)
 # Size of the blocks, in pixels
@@ -14,12 +16,16 @@ extends Node2D
 @export var fall_speed_multiplier : float = 2
 # Width of line to draw between blocks
 @export var line_width : float = 5.0
+# Chance of spawning a grey block
+@export var grey_block_spawn_chance : float = 0.5
 
 # Timer that determines the amoount of time you can move the clump while it's on the floor
 @onready var grace_timer = $"Grace Timer"
 # Node that holds the next clump display's position
 @onready var next_clump_position = $"Next Clump"
 
+# Colors the blocks can be 
+const COLORS = preload("res://Scenes/colors_enum.gd").colors
 # States the game board can be in
 enum states {CLUMP_FALLING, BLOCKS_FALLING, CHECKING_FOR_LOOPS}
 # Current state
@@ -96,23 +102,15 @@ func initialize_board() -> void:
 func initialize_clump() -> void:
 	clump_position.x = int(board_size.x / 2) - 1
 	clump_position.y = -2
-	clump = []
-	for i in range(4):
-		var random : int = randi_range(0, block_scenes.size() - 1)
-		clump.append(block_scenes[random].instantiate())
-	for i in range(4):
-		var random : int = randi_range(0, block_scenes.size() - 1)
-		next_clump.append(block_scenes[random].instantiate())
+	clump = fill_clump()
+	next_clump = fill_clump()
 
 # Initializes the clump, which stores blocks in a clockwise order starting at the top left corner
 func reset_clump() -> void:
 	clump_position.x = int(board_size.x / 2) - 1
 	clump_position.y = -2
 	clump = next_clump
-	next_clump = []
-	for i in range(4):
-		var random : int = randi_range(0, block_scenes.size() - 1)
-		next_clump.append(block_scenes[random].instantiate())
+	next_clump = fill_clump()
 
 # Draw board of static blocks
 func draw_board() -> void:
@@ -151,32 +149,53 @@ func draw_connection_lines() -> void:
 	for x in board_size.x:
 		for y in board_size.y:
 			if get_if_board_with_borders(Vector2i(x, y)):
-				var line_color = get_board(Vector2i(x, y)).line_color
-				# Check and draw lines for matching block to the right
-				if get_if_board_without_borders(Vector2i(x + 1, y)):
-					var right_block = get_board(Vector2i(x + 1, y))
-					if line_color == right_block.line_color:
-						var starting_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
-						var ending_block_midpoint = Vector2(((x + 1) * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
-						draw_line(starting_block_midpoint, ending_block_midpoint,line_color, line_width)
-				# Check and draw lines for matching block below
-				if get_if_board_without_borders(Vector2i(x, y + 1)):
-					var below_block = get_board(Vector2i(x, y + 1))
-					if line_color == below_block.line_color:
-						var starting_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
-						var ending_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), ((y + 1) * block_size.y) + (block_size.y / 2))
-						draw_line(starting_block_midpoint, ending_block_midpoint,line_color, line_width)
+				if get_board(Vector2i(x, y)).color != COLORS.GREY:
+					var line_color = get_board(Vector2i(x, y)).line_color
+					# Check and draw lines for matching block to the right
+					if get_if_board_without_borders(Vector2i(x + 1, y)):
+						var right_block = get_board(Vector2i(x + 1, y))
+						if line_color == right_block.line_color:
+							var starting_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
+							var ending_block_midpoint = Vector2(((x + 1) * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
+							draw_line(starting_block_midpoint, ending_block_midpoint,line_color, line_width)
+					# Check and draw lines for matching block below
+					if get_if_board_without_borders(Vector2i(x, y + 1)):
+						var below_block = get_board(Vector2i(x, y + 1))
+						if line_color == below_block.line_color:
+							var starting_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), (y * block_size.y) + (block_size.y / 2))
+							var ending_block_midpoint = Vector2((x * block_size.x) + (block_size.x / 2), ((y + 1) * block_size.y) + (block_size.y / 2))
+							draw_line(starting_block_midpoint, ending_block_midpoint,line_color, line_width)
+
+func fill_clump() -> Array[Block]:
+	var block_array : Array[Block]
+	var random : float = randf()
+	# Case if no grey block spawned
+	if random > grey_block_spawn_chance:
+		for i in range(4):
+			var random_block : int = randi_range(0, block_scenes.size() - 1)
+			block_array.append(block_scenes[random_block].instantiate())
+	# Case if grey block spawned
+	else:
+		var spawn_num = randi_range(0, 3)
+		for i in range(4):
+			if i == spawn_num:
+				block_array.append(grey_block_scene.instantiate())
+			else:
+				var random_block : int = randi_range(0, block_scenes.size() - 1)
+				block_array.append(block_scenes[random_block].instantiate())
+	return block_array
 
 func check_for_loops() -> void:
 	for x in board_size.x:
 		for y in board_size.y:
 			if get_if_board_without_borders(Vector2i(x, y)):
 				if not get_board(Vector2i(x, y)).visited:
-					var path : Array[Block] = []
-					search(get_board(Vector2i(x, y)), get_board(Vector2i(x, y)), path)
-					if loop_found:
-						handle_loop(path)
-					loop_found = false
+					if get_board(Vector2i(x,y)).color != COLORS.GREY:
+						var path : Array[Block] = []
+						search(get_board(Vector2i(x, y)), get_board(Vector2i(x, y)), path)
+						if loop_found:
+							handle_loop(path)
+						loop_found = false
 	reset_visited()
 
 func search(current_block : Block, previous_block : Block, path : Array) -> void:
