@@ -48,6 +48,8 @@ var loop_found : bool = false
 var blocks_to_pop : Array[Block]
 # Grey blocks at bottom of screen to remove
 var bottom_grey_blocks : Array[Block]
+# Blocks within loops
+var looped_blocks : Array[Block]
 # Fall speed for clump
 var fall_speed : float = initial_fall_speed
 
@@ -210,6 +212,7 @@ func check_for_loops() -> void:
 func search(current_block : Block, previous_block : Block, path : Array) -> void:
 	path.append(current_block)
 	current_block.visited = true
+	current_block.out_of_loop = true
 	var current_position = Vector2i(current_block.pos)
 	var current_color = previous_block.color
 	var neighbors : Array[Vector2i] = [
@@ -231,7 +234,14 @@ func search(current_block : Block, previous_block : Block, path : Array) -> void
 func handle_loop(path : Array[Block]) -> void:
 	print("loop found: ")
 	print(path)
+	for block in path:
+		print(block.pos)
 	blocks_to_pop.append_array(path)
+	mark_outside_as_visited()
+	get_looped_blocks()
+	if looped_blocks:
+		blocks_to_pop.append_array(looped_blocks)
+	looped_blocks = []
 
 # Pop blocks on board, handle score, etc
 func pop_blocks() -> void:
@@ -262,6 +272,55 @@ func reset_visited() -> void:
 	for block in board:
 		if block:
 			block.visited = false
+			block.out_of_loop = false
+
+# TODO: Make an algorithm that checks for an unvisited block around the border (skipping unfilled blocks from the top),
+# 		and if there is, flood fill around unvisited blocks marking them visited
+#		and then mark the remaining unvisited blocks as to pop?
+
+func mark_outside_as_visited() -> void:
+	# Flood fill top of board, skipping empty blocks
+	for x in board_size.x:
+		for y in board_size.y:
+			if get_if_board_without_borders(Vector2i(x, y)):
+				flood_fill_unvisited(Vector2i(x, y))
+				break
+	# Left side
+	for y in board_size.y:
+		for x in board_size.x:
+			if get_if_board_without_borders(Vector2i(x, y)):
+				flood_fill_unvisited(Vector2i(x, y))
+				break
+	# Right side
+	for y in board_size.y:
+		for x in range(board_size.x - 1, 1, -1):
+			if get_if_board_without_borders(Vector2i(x, y)):
+				flood_fill_unvisited(Vector2i(x, y))
+				break
+	
+	# Flood fill bottom row
+	for x in board_size.x:
+		flood_fill_unvisited(Vector2i(x, board_size.y - 1))
+
+func flood_fill_unvisited(board_position : Vector2i) -> void:
+	if get_if_board_without_borders(board_position):
+		var block = get_board(board_position)
+		if not block.out_of_loop:
+			var neighbors = [
+				board_position + Vector2i.UP,
+				board_position + Vector2i.RIGHT,
+				board_position + Vector2i.DOWN,
+				board_position + Vector2i.LEFT
+			]
+			block.out_of_loop = true
+			for neighbor in neighbors:
+				flood_fill_unvisited(neighbor)
+
+func get_looped_blocks() -> void:
+	for block in board:
+		if block:
+			if not block.out_of_loop:
+				looped_blocks.append(block)
 
 # Returns whether a block is present in the passed board position or not
 func get_if_board_with_borders(board_position : Vector2i) -> bool:

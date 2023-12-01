@@ -10,3 +10,5 @@ const COLORS = preload("res://Scenes/colors_enum.gd").colors
 var pos : Vector2
 
 var visited: bool = false
+
+var out_of_loop : bool = false
